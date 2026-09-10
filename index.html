@@ -1,0 +1,1256 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Corre - Controle Financeiro para Apps</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            ifood: '#EA1D2C',
+                            lalamove: '#F26522',
+                            app99: '#FFB800',
+                            uber: '#000000',
+                            outros: '#8B5CF6',
+                            primary: '#10B981',
+                            darkbg: '#0F172A',
+                            cardbg: '#1E293B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col pb-12 antialiased">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-30 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-900 font-extrabold text-xl shadow-md">
+                        <i class="fa-solid fa-motorcycle"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-wide text-white">Meu Corre <span class="text-xs font-normal text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">v2.0</span></h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Controle financeiro para motoristas e entregadores</p>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex items-center gap-2">
+                    <button id="btnBackupModal" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition-all border border-slate-600">
+                        <i class="fa-solid fa-database text-emerald-400"></i>
+                        <span class="hidden sm:inline">Dados / Backup</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex space-x-2 border-t border-slate-700/60 pt-2 pb-2">
+                <button id="tabBtnLancar" onclick="switchTab('lancar')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow-md">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Lançar Ganhos</span>
+                </button>
+                <button id="tabBtnResumo" onclick="switchTab('resumo')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-slate-100 hover:bg-slate-700/50">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Resumo & Relatórios</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex-grow w-full">
+
+        <!-- TAB 1: LANÇAR GANHOS -->
+        <section id="tabLancar" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Form Card -->
+                <div class="lg:col-span-5 bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-700 shadow-xl self-start">
+                    <div class="flex items-center justify-between mb-5">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-emerald-400"></i>
+                            Novo Lançamento
+                        </h2>
+                        <span class="text-xs text-slate-400">Preencha os dados da jornada</span>
+                    </div>
+
+                    <form id="earningsForm" onsubmit="handleSaveEntry(event)" class="space-y-4">
+                        <!-- App Selection -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Aplicativo / Serviço *</label>
+                            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="appSelectGrid">
+                                <button type="button" onclick="selectApp('ifood')" id="appBtn-ifood" class="app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-700 text-slate-300 transition-all">
+                                    <span class="w-3 h-3 rounded-full bg-red-600 mb-1"></span>
+                                    <span class="text-xs font-semibold">iFood</span>
+                                </button>
+                                <button type="button" onclick="selectApp('lalamove')" id="appBtn-lalamove" class="app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-700 text-slate-300 transition-all">
+                                    <span class="w-3 h-3 rounded-full bg-orange-500 mb-1"></span>
+                                    <span class="text-xs font-semibold">Lalamove</span>
+                                </button>
+                                <button type="button" onclick="selectApp('99')" id="appBtn-99" class="app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-700 text-slate-300 transition-all">
+                                    <span class="w-3 h-3 rounded-full bg-amber-400 mb-1"></span>
+                                    <span class="text-xs font-semibold">99</span>
+                                </button>
+                                <button type="button" onclick="selectApp('uber')" id="appBtn-uber" class="app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-700 text-slate-300 transition-all">
+                                    <span class="w-3 h-3 rounded-full bg-slate-100 mb-1"></span>
+                                    <span class="text-xs font-semibold">Uber</span>
+                                </button>
+                                <button type="button" onclick="selectApp('outros')" id="appBtn-outros" class="app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-700 text-slate-300 transition-all">
+                                    <span class="w-3 h-3 rounded-full bg-purple-500 mb-1"></span>
+                                    <span class="text-xs font-semibold">Outros</span>
+                                </button>
+                            </div>
+                            <input type="hidden" id="selectedApp" value="ifood" required>
+                        </div>
+
+                        <!-- Custom App Name (if 'outros') -->
+                        <div id="customAppContainer" class="hidden">
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nome do Serviço Personalizado</label>
+                            <input type="text" id="customAppName" placeholder="Ex: Borzo, Loggi, Particular..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+
+                        <!-- Date & Value -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Data *</label>
+                                <input type="date" id="entryDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Valor Bruto (R$) *</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-slate-400 font-semibold text-sm">R$</span>
+                                    <input type="number" step="0.01" min="0.01" id="entryAmount" placeholder="0,00" required class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white font-semibold focus:outline-none focus:border-emerald-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Work Shift Hours -->
+                        <div class="p-3 bg-slate-900/60 border border-slate-700/60 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-slate-300"><i class="fa-regular fa-clock text-emerald-400 mr-1"></i> Horário da Jornada</span>
+                                <span id="calculatedHoursText" class="text-xs text-emerald-400 font-medium">0.0 hrs</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] text-slate-400 mb-1">Hora Início</label>
+                                    <input type="time" id="startTime" onchange="updateCalculatedHours()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-400 mb-1">Hora Término</label>
+                                    <input type="time" id="endTime" onchange="updateCalculatedHours()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KM & Notes -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">KM Rodados (opcional)</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" min="0" id="entryKm" placeholder="Ex: 85" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                                    <span class="absolute right-3 top-2.5 text-xs text-slate-400">km</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Observação (opcional)</label>
+                                <input type="text" id="entryNotes" placeholder="Ex: Chuva, bônus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm mt-2">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Salvar Lançamento</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Recent Entries List Card -->
+                <div class="lg:col-span-7 bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-700 shadow-xl flex flex-col">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-history text-emerald-400"></i>
+                                Histórico Recente
+                            </h2>
+                            <p class="text-xs text-slate-400">Últimos lançamentos cadastrados</p>
+                        </div>
+                        <div class="relative w-full sm:w-48">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                            <input type="text" id="searchHistory" oninput="renderRecentEntries()" placeholder="Buscar app ou nota..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto flex-grow">
+                        <div id="recentEntriesList" class="space-y-2">
+                            <!-- Dynamic Content Rendered Here -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 2: RESUMO & RELATÓRIOS -->
+        <section id="tabResumo" class="hidden space-y-6">
+
+            <!-- KPI Cards Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <!-- Hoje -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
+                        <span>Total Hoje</span>
+                        <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar-day"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiToday" class="text-xl sm:text-2xl font-extrabold text-white">R$ 0,00</div>
+                        <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                            <span id="kpiTodayHours"><i class="fa-regular fa-clock mr-1"></i>0h</span>
+                            <span>•</span>
+                            <span id="kpiTodayRate" class="text-emerald-400 font-medium">R$ 0,00/h</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Semana -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
+                        <span>Esta Semana</span>
+                        <div class="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar-week"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiWeek" class="text-xl sm:text-2xl font-extrabold text-white">R$ 0,00</div>
+                        <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                            <span id="kpiWeekHours"><i class="fa-regular fa-clock mr-1"></i>0h</span>
+                            <span>•</span>
+                            <span id="kpiWeekRate" class="text-teal-400 font-medium">R$ 0,00/h</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mês -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
+                        <span>Este Mês</span>
+                        <div class="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar-days"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiMonth" class="text-xl sm:text-2xl font-extrabold text-white">R$ 0,00</div>
+                        <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                            <span id="kpiMonthHours"><i class="fa-regular fa-clock mr-1"></i>0h</span>
+                            <span>•</span>
+                            <span id="kpiMonthRate" class="text-cyan-400 font-medium">R$ 0,00/h</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ano -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
+                        <span>Este Ano</span>
+                        <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar text-purple-400"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiYear" class="text-xl sm:text-2xl font-extrabold text-white">R$ 0,00</div>
+                        <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                            <span id="kpiYearHours"><i class="fa-regular fa-clock mr-1"></i>0h</span>
+                            <span>•</span>
+                            <span id="kpiYearRate" class="text-purple-400 font-medium">R$ 0,00/h</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Filter Controls -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-filter text-emerald-400"></i>
+                    <span class="text-sm font-semibold text-white">Filtrar Período:</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <select id="filterMonth" onchange="renderReports()" class="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
+                        <option value="all">Todos os Meses</option>
+                        <option value="0">Janeiro</option>
+                        <option value="1">Fevereiro</option>
+                        <option value="2">Março</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Maio</option>
+                        <option value="5">Junho</option>
+                        <option value="6">Julho</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Setembro</option>
+                        <option value="9">Outubro</option>
+                        <option value="10">Novembro</option>
+                        <option value="11">Dezembro</option>
+                    </select>
+                    <select id="filterYear" onchange="renderReports()" class="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Platform Distribution Chart -->
+                <div class="lg:col-span-5 bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col justify-between">
+                    <div class="mb-4">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                            Ganhos por Aplicativo
+                        </h3>
+                        <p class="text-xs text-slate-400">Participação de cada serviço</p>
+                    </div>
+                    <div class="relative flex items-center justify-center min-h-[240px] p-2">
+                        <canvas id="chartAppDistribution" class="max-h-[240px]"></canvas>
+                    </div>
+                </div>
+
+                <!-- Daily Performance Bar Chart -->
+                <div class="lg:col-span-7 bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col justify-between">
+                    <div class="mb-4">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-simple text-emerald-400"></i>
+                            Evolução dos Ganhos
+                        </h3>
+                        <p class="text-xs text-slate-400">Ganhos diários no período selecionado</p>
+                    </div>
+                    <div class="relative min-h-[240px] w-full">
+                        <canvas id="chartDailyPerformance" class="max-h-[240px] w-full"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Grouped Tables -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-3">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-emerald-400"></i>
+                        Detalhamento Agrupado
+                    </h3>
+
+                    <!-- Grouping Tabs -->
+                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs">
+                        <button onclick="setGroupView('day')" id="groupBtn-day" class="px-3 py-1 rounded-md font-semibold bg-emerald-500 text-slate-950 transition-all">Por Dia</button>
+                        <button onclick="setGroupView('week')" id="groupBtn-week" class="px-3 py-1 rounded-md font-semibold text-slate-400 hover:text-white transition-all">Por Semana</button>
+                        <button onclick="setGroupView('month')" id="groupBtn-month" class="px-3 py-1 rounded-md font-semibold text-slate-400 hover:text-white transition-all">Por Mês</button>
+                        <button onclick="setGroupView('year')" id="groupBtn-year" class="px-3 py-1 rounded-md font-semibold text-slate-400 hover:text-white transition-all">Por Ano</button>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="text-slate-400 bg-slate-900/60 uppercase font-semibold text-[11px]">
+                            <tr>
+                                <th class="p-3 rounded-l-lg" id="thGroupTitle">Período / Data</th>
+                                <th class="p-3 text-right">Horas Trabs.</th>
+                                <th class="p-3 text-right">KM Rodados</th>
+                                <th class="p-3 text-right">Média R$/Hora</th>
+                                <th class="p-3 text-right">Média R$/KM</th>
+                                <th class="p-3 text-right rounded-r-lg">Total Bruto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groupedTableBody" class="divide-y divide-slate-700/50 text-slate-200">
+                            <!-- Dynamic Content Rendered Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL: Backup / Data Management -->
+    <div id="modalBackup" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-database text-emerald-400"></i>
+                    Gerenciar Dados & Backup
+                </h3>
+                <button onclick="closeModal('modalBackup')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="exportDataJSON()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-900 hover:bg-slate-700 border border-slate-700 text-left transition-all">
+                    <div>
+                        <div class="text-sm font-semibold text-white"><i class="fa-solid fa-download text-emerald-400 mr-2"></i>Exportar Backup</div>
+                        <div class="text-xs text-slate-400">Baixar arquivo .json com todos os seus lançamentos</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+                </button>
+
+                <label class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-900 hover:bg-slate-700 border border-slate-700 text-left cursor-pointer transition-all">
+                    <div>
+                        <div class="text-sm font-semibold text-white"><i class="fa-solid fa-upload text-teal-400 mr-2"></i>Importar Backup</div>
+                        <div class="text-xs text-slate-400">Carregar arquivo .json salvo anteriormente</div>
+                    </div>
+                    <input type="file" id="importFileInput" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                    <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+                </label>
+
+                <button onclick="loadDemoData()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-900 hover:bg-slate-700 border border-slate-700 text-left transition-all">
+                    <div>
+                        <div class="text-sm font-semibold text-white"><i class="fa-solid fa-wand-magic-sparkles text-amber-400 mr-2"></i>Carregar Dados Exemplo</div>
+                        <div class="text-xs text-slate-400">Adicionar exemplos fictícios para demonstrar relatórios</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+                </button>
+
+                <div class="pt-2 border-t border-slate-700/60">
+                    <button onclick="confirmClearAllData()" class="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold transition-all">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Apagar Todos os Dados</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit Entry -->
+    <div id="modalEdit" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i>
+                    Editar Lançamento
+                </h3>
+                <button onclick="closeModal('modalEdit')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="editForm" onsubmit="handleUpdateEntry(event)" class="space-y-3">
+                <input type="hidden" id="editEntryId">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Aplicativo</label>
+                    <select id="editApp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                        <option value="ifood">iFood</option>
+                        <option value="lalamove">Lalamove</option>
+                        <option value="99">99</option>
+                        <option value="uber">Uber</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Data</label>
+                        <input type="date" id="editDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Valor (R$)</label>
+                        <input type="number" step="0.01" id="editAmount" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Hora Início</label>
+                        <input type="time" id="editStartTime" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Hora Término</label>
+                        <input type="time" id="editEndTime" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">KM Rodados</label>
+                        <input type="number" step="0.1" id="editKm" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Observação</label>
+                        <input type="text" id="editNotes" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalEdit')" class="px-4 py-2 rounded-lg bg-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-600">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-500 text-xs font-bold text-slate-950 hover:bg-emerald-400">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Custom Toast Notification System -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 bg-slate-800 border border-emerald-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all transform translate-y-20 opacity-0 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage" class="text-xs font-medium">Operação realizada com sucesso!</span>
+    </div>
+
+    <script>
+        // APP STATE & CONSTANTS
+        const STORAGE_KEY = 'meucorre_earnings_v2';
+        let entries = [];
+        let activeTab = 'lancar';
+        let currentGroupView = 'day'; // 'day', 'week', 'month', 'year'
+
+        // App Brand Metadata
+        const APP_CONFIG = {
+            ifood: { name: 'iFood', color: '#EA1D2C', badgeBg: 'bg-red-500/20 text-red-400 border-red-500/30' },
+            lalamove: { name: 'Lalamove', color: '#F26522', badgeBg: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+            '99': { name: '99', color: '#FFB800', badgeBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+            uber: { name: 'Uber', color: '#94A3B8', badgeBg: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
+            outros: { name: 'Outros', color: '#8B5CF6', badgeBg: 'bg-purple-500/20 text-purple-400 border-purple-500/30' }
+        };
+
+        // Chart instances
+        let chartAppInstance = null;
+        let chartDailyInstance = null;
+
+        // INITIALIZATION
+        window.onload = function() {
+            // Set default date to today
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            
+            // Load saved entries
+            loadStoredEntries();
+
+            // Setup Backup Modal Trigger
+            document.getElementById('btnBackupModal').onclick = () => openModal('modalBackup');
+
+            // Populate Filter Year Select
+            populateYearFilter();
+
+            // Default app selection UI
+            selectApp('ifood');
+
+            // Initial render
+            renderRecentEntries();
+            updateCalculatedHours();
+        };
+
+        // Local Storage Helper
+        function loadStoredEntries() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    entries = JSON.parse(raw);
+                } catch (e) {
+                    console.error('Failed to parse local storage', e);
+                    entries = [];
+                }
+            } else {
+                entries = [];
+            }
+        }
+
+        function saveEntriesToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        }
+
+        // TAB SWITCHING
+        function switchTab(tab) {
+            activeTab = tab;
+            const lancarSec = document.getElementById('tabLancar');
+            const resumoSec = document.getElementById('tabResumo');
+            const btnLancar = document.getElementById('tabBtnLancar');
+            const btnResumo = document.getElementById('tabBtnResumo');
+
+            if (tab === 'lancar') {
+                lancarSec.classList.remove('hidden');
+                resumoSec.classList.add('hidden');
+                btnLancar.className = 'flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow-md';
+                btnResumo.className = 'flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-slate-100 hover:bg-slate-700/50';
+                renderRecentEntries();
+            } else {
+                lancarSec.classList.add('hidden');
+                resumoSec.classList.remove('hidden');
+                btnResumo.className = 'flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow-md';
+                btnLancar.className = 'flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-slate-100 hover:bg-slate-700/50';
+                renderReports();
+            }
+        }
+
+        // APP SELECTION LOGIC
+        function selectApp(appKey) {
+            document.getElementById('selectedApp').value = appKey;
+            const container = document.getElementById('customAppContainer');
+            
+            if (appKey === 'outros') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+
+            // Update UI buttons styling
+            const keys = ['ifood', 'lalamove', '99', 'uber', 'outros'];
+            keys.forEach(k => {
+                const btn = document.getElementById(`appBtn-${k}`);
+                if (k === appKey) {
+                    btn.className = 'app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-white font-bold transition-all scale-105';
+                } else {
+                    btn.className = 'app-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-700 text-slate-300 transition-all';
+                }
+            });
+        }
+
+        // Calculate Work Shift Hours
+        function calculateDurationHours(startStr, endStr) {
+            if (!startStr || !endStr) return 0;
+            const [sH, sM] = startStr.split(':').map(Number);
+            const [eH, eM] = endStr.split(':').map(Number);
+            
+            let startMinutes = sH * 60 + sM;
+            let endMinutes = eH * 60 + eM;
+
+            // Handle overnight shifts (e.g., 22:00 to 03:00)
+            if (endMinutes < startMinutes) {
+                endMinutes += 24 * 60;
+            }
+
+            const diffMinutes = endMinutes - startMinutes;
+            return Math.max(0, diffMinutes / 60);
+        }
+
+        function updateCalculatedHours() {
+            const start = document.getElementById('startTime').value;
+            const end = document.getElementById('endTime').value;
+            const hrs = calculateDurationHours(start, end);
+            document.getElementById('calculatedHoursText').textContent = `${hrs.toFixed(1)} hrs`;
+        }
+
+        // SAVE NEW ENTRY
+        function handleSaveEntry(e) {
+            e.preventDefault();
+
+            const app = document.getElementById('selectedApp').value;
+            const customAppName = document.getElementById('customAppName').value.trim();
+            const date = document.getElementById('entryDate').value;
+            const amount = parseFloat(document.getElementById('entryAmount').value);
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const km = parseFloat(document.getElementById('entryKm').value) || 0;
+            const notes = document.getElementById('entryNotes').value.trim();
+            
+            const hours = calculateDurationHours(startTime, endTime);
+
+            if (!amount || amount <= 0) {
+                showToast('Informe um valor válido maior que zero.', 'error');
+                return;
+            }
+
+            const newEntry = {
+                id: 'entry_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                app,
+                customAppName: app === 'outros' ? (customAppName || 'Outro Serviço') : '',
+                date,
+                amount,
+                startTime,
+                endTime,
+                hours,
+                km,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            entries.unshift(newEntry); // Add to top
+            saveEntriesToStorage();
+
+            // Reset form fields partially (keep date)
+            document.getElementById('entryAmount').value = '';
+            document.getElementById('entryKm').value = '';
+            document.getElementById('entryNotes').value = '';
+            document.getElementById('customAppName').value = '';
+
+            showToast('Lançamento salvo com sucesso!');
+            renderRecentEntries();
+        }
+
+        // DELETE ENTRY
+        function deleteEntry(id) {
+            entries = entries.filter(item => item.id !== id);
+            saveEntriesToStorage();
+            showToast('Lançamento removido.');
+            renderRecentEntries();
+            if (activeTab === 'resumo') renderReports();
+        }
+
+        // RENDER RECENT ENTRIES LIST
+        function renderRecentEntries() {
+            const container = document.getElementById('recentEntriesList');
+            const search = document.getElementById('searchHistory').value.toLowerCase();
+
+            let filtered = entries.filter(item => {
+                const appName = item.app === 'outros' ? item.customAppName : APP_CONFIG[item.app]?.name;
+                return (appName && appName.toLowerCase().includes(search)) || 
+                       (item.notes && item.notes.toLowerCase().includes(search));
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-500">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2 block"></i>
+                        <p class="text-sm">Nenhum lançamento encontrado.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const config = APP_CONFIG[item.app] || APP_CONFIG.outros;
+                const displayName = item.app === 'outros' ? (item.customAppName || 'Outros') : config.name;
+                const formattedDate = formatDateBR(item.date);
+                const formattedAmount = formatCurrency(item.amount);
+
+                return `
+                    <div class="flex items-center justify-between p-3.5 bg-slate-900/80 hover:bg-slate-900 border border-slate-700/70 rounded-xl transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-10 rounded-full" style="background-color: ${config.color}"></div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-white text-sm">${displayName}</span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-md border font-semibold ${config.badgeBg}">${formattedDate}</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                                    ${item.hours > 0 ? `<span><i class="fa-regular fa-clock mr-1"></i>${item.hours.toFixed(1)}h</span>` : ''}
+                                    ${item.km > 0 ? `<span><i class="fa-solid fa-gauge-high mr-1"></i>${item.km} km</span>` : ''}
+                                    ${item.notes ? `<span class="italic text-slate-400 max-w-[150px] truncate">"${item.notes}"</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <span class="block font-bold text-emerald-400 text-sm sm:text-base">${formattedAmount}</span>
+                                ${item.hours > 0 ? `<span class="text-[10px] text-slate-400">R$ ${(item.amount / item.hours).toFixed(2)}/h</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openEditModal('${item.id}')" class="text-slate-400 hover:text-amber-400 p-2 rounded-lg transition-colors"><i class="fa-solid fa-pencil text-xs"></i></button>
+                                <button onclick="deleteEntry('${item.id}')" class="text-slate-400 hover:text-red-400 p-2 rounded-lg transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // SUMMARY & REPORTS CALCULATION
+        function renderReports() {
+            populateYearFilter();
+
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+
+            // Filter Selections
+            const selectedMonth = document.getElementById('filterMonth').value;
+            const selectedYear = document.getElementById('filterYear').value || now.getFullYear().toString();
+
+            // KPI 1: TODAY
+            const todayEntries = entries.filter(e => e.date === todayStr);
+            const todayTotal = todayEntries.reduce((sum, e) => sum + e.amount, 0);
+            const todayHours = todayEntries.reduce((sum, e) => sum + e.hours, 0);
+            
+            // KPI 2: CURRENT WEEK
+            const startOfWeek = getStartOfWeek(new Date());
+            const weekEntries = entries.filter(e => new Date(e.date + 'T00:00:00') >= startOfWeek);
+            const weekTotal = weekEntries.reduce((sum, e) => sum + e.amount, 0);
+            const weekHours = weekEntries.reduce((sum, e) => sum + e.hours, 0);
+
+            // KPI 3: CURRENT MONTH
+            const currentMonthStr = String(now.getMonth()).padStart(2, '0');
+            const currentYearStr = String(now.getFullYear());
+            const monthEntries = entries.filter(e => {
+                const d = new Date(e.date + 'T00:00:00');
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            });
+            const monthTotal = monthEntries.reduce((sum, e) => sum + e.amount, 0);
+            const monthHours = monthEntries.reduce((sum, e) => sum + e.hours, 0);
+
+            // KPI 4: CURRENT YEAR
+            const yearEntries = entries.filter(e => {
+                const d = new Date(e.date + 'T00:00:00');
+                return d.getFullYear() === now.getFullYear();
+            });
+            const yearTotal = yearEntries.reduce((sum, e) => sum + e.amount, 0);
+            const yearHours = yearEntries.reduce((sum, e) => sum + e.hours, 0);
+
+            // Update KPI DOM Elements
+            document.getElementById('kpiToday').textContent = formatCurrency(todayTotal);
+            document.getElementById('kpiTodayHours').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${todayHours.toFixed(1)}h`;
+            document.getElementById('kpiTodayRate').textContent = todayHours > 0 ? `R$ ${(todayTotal / todayHours).toFixed(2)}/h` : 'R$ 0/h';
+
+            document.getElementById('kpiWeek').textContent = formatCurrency(weekTotal);
+            document.getElementById('kpiWeekHours').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${weekHours.toFixed(1)}h`;
+            document.getElementById('kpiWeekRate').textContent = weekHours > 0 ? `R$ ${(weekTotal / weekHours).toFixed(2)}/h` : 'R$ 0/h';
+
+            document.getElementById('kpiMonth').textContent = formatCurrency(monthTotal);
+            document.getElementById('kpiMonthHours').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${monthHours.toFixed(1)}h`;
+            document.getElementById('kpiMonthRate').textContent = monthHours > 0 ? `R$ ${(monthTotal / monthHours).toFixed(2)}/h` : 'R$ 0/h';
+
+            document.getElementById('kpiYear').textContent = formatCurrency(yearTotal);
+            document.getElementById('kpiYearHours').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${yearHours.toFixed(1)}h`;
+            document.getElementById('kpiYearRate').textContent = yearHours > 0 ? `R$ ${(yearTotal / yearHours).toFixed(2)}/h` : 'R$ 0/h';
+
+            // Filtered entries for Charts & Detailed Tables
+            const filteredEntries = entries.filter(e => {
+                const d = new Date(e.date + 'T00:00:00');
+                const matchYear = d.getFullYear().toString() === selectedYear;
+                const matchMonth = selectedMonth === 'all' || d.getMonth().toString() === selectedMonth;
+                return matchYear && matchMonth;
+            });
+
+            // Render Charts
+            renderAppDistributionChart(filteredEntries);
+            renderDailyPerformanceChart(filteredEntries);
+
+            // Render Grouped Table
+            renderGroupedTable(filteredEntries);
+        }
+
+        // CHART 1: App Distribution Chart (Doughnut)
+        function renderAppDistributionChart(data) {
+            const ctx = document.getElementById('chartAppDistribution').getContext('2d');
+
+            const appTotals = { ifood: 0, lalamove: 0, '99': 0, uber: 0, outros: 0 };
+            data.forEach(e => {
+                if (appTotals[e.app] !== undefined) {
+                    appTotals[e.app] += e.amount;
+                } else {
+                    appTotals.outros += e.amount;
+                }
+            });
+
+            const labels = ['iFood', 'Lalamove', '99', 'Uber', 'Outros'];
+            const datasetData = [appTotals.ifood, appTotals.lalamove, appTotals['99'], appTotals.uber, appTotals.outros];
+            const colors = [APP_CONFIG.ifood.color, APP_CONFIG.lalamove.color, APP_CONFIG['99'].color, APP_CONFIG.uber.color, APP_CONFIG.outros.color];
+
+            if (chartAppInstance) chartAppInstance.destroy();
+
+            chartAppInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: datasetData,
+                        backgroundColor: colors,
+                        borderColor: '#1E293B',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94A3B8', font: { family: 'Inter', size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` ${context.label}: R$ ${context.raw.toFixed(2)}`
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // CHART 2: Daily Performance Chart (Bar)
+        function renderDailyPerformanceChart(data) {
+            const ctx = document.getElementById('chartDailyPerformance').getContext('2d');
+
+            // Group by date
+            const dateMap = {};
+            data.forEach(e => {
+                dateMap[e.date] = (dateMap[e.date] || 0) + e.amount;
+            });
+
+            // Sort dates ascending
+            const sortedDates = Object.keys(dateMap).sort();
+            const labels = sortedDates.map(d => formatDateShort(d));
+            const datasetData = sortedDates.map(d => dateMap[d]);
+
+            if (chartDailyInstance) chartDailyInstance.destroy();
+
+            chartDailyInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ganhos (R$)',
+                        data: datasetData,
+                        backgroundColor: '#10B981',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#34D399'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748B', font: { family: 'Inter', size: 10 } }
+                        },
+                        y: {
+                            grid: { color: '#334155' },
+                            ticks: { color: '#64748B', font: { family: 'Inter', size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` Total: R$ ${context.raw.toFixed(2)}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // GROUPED VIEW DATA AGGREGATION
+        function setGroupView(view) {
+            currentGroupView = view;
+            ['day', 'week', 'month', 'year'].forEach(v => {
+                const btn = document.getElementById(`groupBtn-${v}`);
+                if (v === view) {
+                    btn.className = 'px-3 py-1 rounded-md font-semibold bg-emerald-500 text-slate-950 transition-all';
+                } else {
+                    btn.className = 'px-3 py-1 rounded-md font-semibold text-slate-400 hover:text-white transition-all';
+                }
+            });
+
+            // Re-render table
+            const selectedMonth = document.getElementById('filterMonth').value;
+            const selectedYear = document.getElementById('filterYear').value || new Date().getFullYear().toString();
+            const filteredEntries = entries.filter(e => {
+                const d = new Date(e.date + 'T00:00:00');
+                const matchYear = d.getFullYear().toString() === selectedYear;
+                const matchMonth = selectedMonth === 'all' || d.getMonth().toString() === selectedMonth;
+                return matchYear && matchMonth;
+            });
+
+            renderGroupedTable(filteredEntries);
+        }
+
+        function renderGroupedTable(data) {
+            const tbody = document.getElementById('groupedTableBody');
+            const thTitle = document.getElementById('thGroupTitle');
+
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-slate-500">
+                            Nenhum registro para o período selecionado.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const groups = {};
+
+            data.forEach(e => {
+                const dateObj = new Date(e.date + 'T00:00:00');
+                let key = '';
+                let title = '';
+
+                if (currentGroupView === 'day') {
+                    key = e.date;
+                    title = formatDateBR(e.date);
+                    thTitle.textContent = 'Dia';
+                } else if (currentGroupView === 'week') {
+                    const weekNum = getWeekNumber(dateObj);
+                    key = `${dateObj.getFullYear()}-W${weekNum}`;
+                    title = `Semana ${weekNum} (${dateObj.getFullYear()})`;
+                    thTitle.textContent = 'Semana do Ano';
+                } else if (currentGroupView === 'month') {
+                    key = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
+                    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                    title = `${monthNames[dateObj.getMonth()]} de ${dateObj.getFullYear()}`;
+                    thTitle.textContent = 'Mês';
+                } else if (currentGroupView === 'year') {
+                    key = `${dateObj.getFullYear()}`;
+                    title = `${dateObj.getFullYear()}`;
+                    thTitle.textContent = 'Ano';
+                }
+
+                if (!groups[key]) {
+                    groups[key] = { title, amount: 0, hours: 0, km: 0, count: 0 };
+                }
+
+                groups[key].amount += e.amount;
+                groups[key].hours += e.hours;
+                groups[key].km += e.km;
+                groups[key].count += 1;
+            });
+
+            const sortedKeys = Object.keys(groups).sort().reverse();
+
+            tbody.innerHTML = sortedKeys.map(k => {
+                const g = groups[k];
+                const hourlyRate = g.hours > 0 ? (g.amount / g.hours).toFixed(2) : '0.00';
+                const kmRate = g.km > 0 ? (g.amount / g.km).toFixed(2) : '0.00';
+
+                return `
+                    <tr class="hover:bg-slate-700/30 transition-colors">
+                        <td class="p-3 font-semibold text-white">${g.title}</td>
+                        <td class="p-3 text-right text-slate-300">${g.hours.toFixed(1)}h</td>
+                        <td class="p-3 text-right text-slate-300">${g.km.toFixed(1)} km</td>
+                        <td class="p-3 text-right font-medium text-emerald-400">R$ ${hourlyRate}/h</td>
+                        <td class="p-3 text-right font-medium text-teal-400">R$ ${kmRate}/km</td>
+                        <td class="p-3 text-right font-bold text-white">${formatCurrency(g.amount)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // MODALS & EDITING
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openEditModal(id) {
+            const item = entries.find(e => e.id === id);
+            if (!item) return;
+
+            document.getElementById('editEntryId').value = item.id;
+            document.getElementById('editApp').value = item.app;
+            document.getElementById('editDate').value = item.date;
+            document.getElementById('editAmount').value = item.amount;
+            document.getElementById('editStartTime').value = item.startTime || '';
+            document.getElementById('editEndTime').value = item.endTime || '';
+            document.getElementById('editKm').value = item.km || '';
+            document.getElementById('editNotes').value = item.notes || '';
+
+            openModal('modalEdit');
+        }
+
+        function handleUpdateEntry(e) {
+            e.preventDefault();
+            const id = document.getElementById('editEntryId').value;
+            const itemIndex = entries.findIndex(e => e.id === id);
+            if (itemIndex === -1) return;
+
+            const app = document.getElementById('editApp').value;
+            const date = document.getElementById('editDate').value;
+            const amount = parseFloat(document.getElementById('editAmount').value);
+            const startTime = document.getElementById('editStartTime').value;
+            const endTime = document.getElementById('editEndTime').value;
+            const km = parseFloat(document.getElementById('editKm').value) || 0;
+            const notes = document.getElementById('editNotes').value.trim();
+
+            const hours = calculateDurationHours(startTime, endTime);
+
+            entries[itemIndex] = {
+                ...entries[itemIndex],
+                app,
+                date,
+                amount,
+                startTime,
+                endTime,
+                hours,
+                km,
+                notes
+            };
+
+            saveEntriesToStorage();
+            closeModal('modalEdit');
+            showToast('Lançamento atualizado!');
+            
+            if (activeTab === 'lancar') renderRecentEntries();
+            if (activeTab === 'resumo') renderReports();
+        }
+
+        // BACKUP & EXPORT/IMPORT
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `meu_corre_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('Backup exportado com sucesso!');
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        entries = imported;
+                        saveEntriesToStorage();
+                        showToast('Backup importado com sucesso!');
+                        closeModal('modalBackup');
+                        if (activeTab === 'lancar') renderRecentEntries();
+                        if (activeTab === 'resumo') renderReports();
+                    } else {
+                        showToast('Formato de arquivo inválido.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erro ao ler arquivo JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmClearAllData() {
+            if (entries.length === 0) {
+                showToast('Não há dados para apagar.');
+                return;
+            }
+            // Custom modal confirmation prompt simulation
+            entries = [];
+            saveEntriesToStorage();
+            closeModal('modalBackup');
+            showToast('Todos os dados foram apagados com sucesso!');
+            if (activeTab === 'lancar') renderRecentEntries();
+            if (activeTab === 'resumo') renderReports();
+        }
+
+        function loadDemoData() {
+            const today = new Date();
+            const demo = [];
+            const apps = ['ifood', 'lalamove', '99', 'uber'];
+
+            for (let i = 0; i < 25; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const randomApp = apps[Math.floor(Math.random() * apps.length)];
+                const randomAmount = Math.floor(Math.random() * 180) + 40;
+                const randomKm = Math.floor(Math.random() * 90) + 20;
+                const randomHours = (Math.random() * 6 + 2);
+
+                demo.push({
+                    id: 'demo_' + i,
+                    app: randomApp,
+                    customAppName: '',
+                    date: dateStr,
+                    amount: randomAmount,
+                    startTime: '10:00',
+                    endTime: `${10 + Math.floor(randomHours)}:00`,
+                    hours: randomHours,
+                    km: randomKm,
+                    notes: 'Jornada demonstrativa',
+                    createdAt: d.toISOString()
+                });
+            }
+
+            entries = demo;
+            saveEntriesToStorage();
+            closeModal('modalBackup');
+            showToast('Dados de exemplo carregados!');
+            if (activeTab === 'lancar') renderRecentEntries();
+            if (activeTab === 'resumo') renderReports();
+        }
+
+        // HELPER UTILITIES
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+        }
+
+        function formatDateBR(dateStr) {
+            if (!dateStr) return '';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function formatDateShort(dateStr) {
+            if (!dateStr) return '';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}`;
+        }
+
+        function getStartOfWeek(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+            return new Date(date.setDate(diff));
+        }
+
+        function getWeekNumber(d) {
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            const dayNum = date.getUTCDay() || 7;
+            date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function populateYearFilter() {
+            const yearSelect = document.getElementById('filterYear');
+            const currentYear = new Date().getFullYear();
+            const years = new Set([currentYear]);
+
+            entries.forEach(e => {
+                if (e.date) {
+                    const y = new Date(e.date + 'T00:00:00').getFullYear();
+                    if (!isNaN(y)) years.add(y);
+                }
+            });
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+            yearSelect.innerHTML = sortedYears.map(y => `<option value="${y}">${y}</option>`).join('');
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            if (type === 'error') {
+                toast.className = toast.className.replace('border-emerald-500', 'border-red-500');
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400 text-lg';
+            } else {
+                toast.className = toast.className.replace('border-red-500', 'border-emerald-500');
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+```
