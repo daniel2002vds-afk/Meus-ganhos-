@@ -205,9 +205,18 @@
                             </h2>
                             <p class="text-xs text-slate-400">Últimos lançamentos cadastrados</p>
                         </div>
-                        <div class="relative w-full sm:w-48">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
-                            <input type="text" id="searchHistory" oninput="renderRecentEntries()" placeholder="Buscar app ou nota..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                        
+                        <!-- Search and Chronological Filter Controls -->
+                        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-44">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                                <input type="text" id="searchHistory" oninput="renderRecentEntries()" placeholder="Buscar app ou nota..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <select id="sortHistory" onchange="renderRecentEntries()" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500">
+                                <option value="newest">Mais Recentes</option>
+                                <option value="chronological">Ordem Cronológica (Antigos → Recentes)</option>
+                                <option value="reverse-chronological">Ordem Cronológica Inversa</option>
+                            </select>
                         </div>
                     </div>
 
@@ -705,11 +714,29 @@
         function renderRecentEntries() {
             const container = document.getElementById('recentEntriesList');
             const search = document.getElementById('searchHistory').value.toLowerCase();
+            const sortOrder = document.getElementById('sortHistory') ? document.getElementById('sortHistory').value : 'newest';
 
             let filtered = entries.filter(item => {
                 const appName = item.app === 'outros' ? item.customAppName : APP_CONFIG[item.app]?.name;
                 return (appName && appName.toLowerCase().includes(search)) || 
                        (item.notes && item.notes.toLowerCase().includes(search));
+            });
+
+            // Sorting logic
+            filtered.sort((a, b) => {
+                const dateA = new Date(a.date + (a.startTime ? 'T' + a.startTime : 'T00:00:00'));
+                const dateB = new Date(b.date + (b.startTime ? 'T' + b.startTime : 'T00:00:00'));
+
+                if (sortOrder === 'chronological') {
+                    // Oldest first
+                    return dateA - dateB || new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+                } else if (sortOrder === 'reverse-chronological') {
+                    // Newest first by date
+                    return dateB - dateA || new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                } else {
+                    // Default newest (insertion order)
+                    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                }
             });
 
             if (filtered.length === 0) {
@@ -1136,7 +1163,6 @@
                 showToast('Não há dados para apagar.');
                 return;
             }
-            // Custom modal confirmation prompt simulation
             entries = [];
             saveEntriesToStorage();
             closeModal('modalBackup');
